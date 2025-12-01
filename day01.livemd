@@ -1,0 +1,121 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 1
+
+## Solution
+
+```elixir
+defmodule Day01 do
+  def to_dir("L"), do: :left
+  def to_dir("R"), do: :right
+
+  def parse_input(input) do
+    input
+    |> String.split()
+    |> Enum.map(fn s ->
+      {dir, distance} = String.split_at(s, 1)
+      {distance, ""} = Integer.parse(distance)
+      {to_dir(dir), distance}
+    end)
+  end
+
+  def mod(a, b), do: rem(rem(a, b) + b, b)
+
+  def apply_instruction({:left, distance}, dial), do: mod(dial - distance, 100)
+  def apply_instruction({:right, distance}, dial), do: mod(dial + distance, 100)
+
+  def count_zero_positions_after_rotations(instructions) do
+    instructions
+    |> Enum.scan(50, &apply_instruction/2)
+    |> Enum.count(fn n -> n == 0 end)
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> count_zero_positions_after_rotations
+  end
+
+  def apply_instruction2({:left, distance}, {dial, zero_positions}) do
+    new_dial = mod(dial - distance, 100)
+
+    {new_dial,
+     zero_positions + div(distance, 100) +
+       if dial != 0 and (new_dial == 0 or new_dial > dial) do
+         1
+       else
+         0
+       end}
+  end
+
+  def apply_instruction2({:right, distance}, {dial, zero_positions}) do
+    new_dial = mod(dial + distance, 100)
+
+    {new_dial,
+     zero_positions + div(distance, 100) +
+       if new_dial < dial do
+         1
+       else
+         0
+       end}
+  end
+
+  def count_zero_positions_within_rotations(instructions) do
+    {_, zero_positions} = Enum.reduce(instructions, {50, 0}, &apply_instruction2/2)
+    zero_positions
+  end
+
+  def part2(input) do
+    input
+    |> parse_input
+    |> count_zero_positions_within_rotations
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day01, <<70, 79, 82, 49, 0, 0, 24, ...>>, {:part2, 1}}
+```
+
+```elixir
+sample_input = """
+L68
+L30
+R48
+L5
+R60
+L55
+L1
+L99
+R14
+L82
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"L68\nL30\nR48\nL5\nR60\nL55\nL1\nL99\nR14\nL82\n"
+```
+
+```elixir
+Day01.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+3
+```
+
+```elixir
+Day01.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+6
+```
