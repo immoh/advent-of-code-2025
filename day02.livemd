@@ -1,0 +1,119 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 2
+
+## Solution
+
+```elixir
+defmodule Day02 do
+  def parse_range(s) do
+    s
+    |> String.split("-")
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  def parse_input(input) do
+    input
+    |> String.split(",")
+    |> Enum.map(&parse_range/1)
+  end
+
+  def invalid_id?(n) do
+    str = Integer.to_string(n)
+    len = String.length(str)
+
+    if rem(len, 2) == 0 do
+      {a, b} = String.split_at(str, div(len, 2))
+      a == b
+    else
+      false
+    end
+  end
+
+  def invalid_ids_in_range([n, m]) do
+    Enum.filter(n..m, &invalid_id?/1)
+  end
+
+  def all_invalid_ids(ranges) do
+    Enum.flat_map(ranges, &invalid_ids_in_range/1)
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> all_invalid_ids
+    |> Enum.sum
+  end
+
+  # Part 2
+
+  def repeating_subs?(str, n) do
+    len = String.length(str)
+
+    if rem(len, n) == 0 do
+      subs = String.slice(str, 0, n)
+      str == String.duplicate(subs, div(len, n))
+    else
+      false
+    end
+  end
+
+  def invalid_id2?(n) do
+    str = Integer.to_string(n)
+    len = String.length(str)
+
+    len > 1 and Enum.any?(1..div(len, 2), &repeating_subs?(str, &1))
+  end
+
+  def invalid_ids_in_range2([n, m]) do
+    Enum.filter(n..m, &invalid_id2?/1)
+  end
+
+  def all_invalid_ids2(ranges) do
+    Enum.flat_map(ranges, &invalid_ids_in_range2/1)
+  end
+
+  def part2(input) do
+    input
+    |> parse_input
+    |> all_invalid_ids2
+    |> Enum.sum
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day02, <<70, 79, 82, 49, 0, 0, 23, ...>>, {:part2, 1}}
+```
+
+```elixir
+sample_input = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124"
+```
+
+```elixir
+Day02.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+1227775554
+```
+
+```elixir
+Day02.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+4174379265
+```
