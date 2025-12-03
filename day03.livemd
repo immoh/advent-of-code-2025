@@ -1,0 +1,95 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 25 – Day 3
+
+## Solution
+
+```elixir
+defmodule Day03 do
+  def parse_input(input) do
+    input
+    |> String.split()
+    |> Enum.map(fn s ->
+      s
+      |> String.graphemes()
+      |> Enum.map(&String.to_integer/1)
+    end)
+  end
+
+  def next_max_digit(digits, {joltage, batteries}) do
+    {max_value, max_index} =
+      batteries
+      |> Enum.drop(-digits + 1)
+      |> Enum.with_index()
+      |> Enum.max_by(fn {value, _} -> value end)
+
+    {10 * joltage + max_value, Enum.drop(batteries, max_index + 1)}
+  end
+
+  def maximum_joltage(batteries, digits) do
+    {joltage, _} = Enum.reduce(digits..1//-1, {0, batteries}, &next_max_digit/2)
+    joltage
+  end
+
+  def total_joltage(banks, digits) do
+    banks
+    |> Enum.map(&maximum_joltage(&1, digits))
+    |> Enum.sum()
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> total_joltage(2)
+  end
+
+  def part2(input) do
+    input
+    |> parse_input
+    |> total_joltage(12)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day03, <<70, 79, 82, 49, 0, 0, 16, ...>>, {:part2, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+987654321111111
+811111111111119
+234234234234278
+818181911112111
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"987654321111111\n811111111111119\n234234234234278\n818181911112111\n"
+```
+
+```elixir
+Day03.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+357
+```
+
+```elixir
+Day03.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+3121910778619
+```
