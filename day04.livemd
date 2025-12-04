@@ -1,0 +1,127 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 4
+
+## Solution
+
+```elixir
+defmodule Day04 do
+  def parse_input(input) do
+    for {row, x} <- input |> String.split() |> Enum.with_index(),
+        {c, y} <- row |> String.graphemes() |> Enum.with_index(),
+        into: %{},
+        do: {{x, y}, c}
+  end
+
+  def neighbors(world, {x, y}) do
+    for dx <- [-1, 0, 1],
+        dy <- [-1, 0, 1],
+        not (dx == 0 and dy == 0),
+        x2 = x + dx,
+        y2 = y + dy,
+        value = world[{x2, y2}] do
+      value
+    end
+  end
+
+  def adjacent_rolls_count(world, pos) do
+    world
+    |> neighbors(pos)
+    |> Enum.count(fn v -> v == "@" end)
+  end
+
+  def forklift_accessible_roll?(world, {pos, c}) do
+    c == "@" and adjacent_rolls_count(world, pos) < 4
+  end
+
+  def find_forklift_accessible_rolls(world) do
+    world
+    |> Enum.filter(&forklift_accessible_roll?(world, &1))
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> find_forklift_accessible_rolls
+    |> length
+  end
+
+  def remove_forklift_accessible_rolls(world) do
+    Enum.reduce(find_forklift_accessible_rolls(world), world, fn {pos, _}, acc ->
+      %{acc | pos => "."}
+    end)
+  end
+
+  def remove_forklift_accessible_rolls_recursively(world) do
+    new_world = remove_forklift_accessible_rolls(world)
+
+    if world == new_world do
+      world
+    else
+      remove_forklift_accessible_rolls_recursively(new_world)
+    end
+  end
+
+  def roll_count(world) do
+    world
+    |> Map.values()
+    |> Enum.count(fn c -> c == "@" end)
+  end
+
+  def part2(input) do
+    world = input |> parse_input
+    new_world = world |> remove_forklift_accessible_rolls_recursively
+
+    roll_count(world) - roll_count(new_world)
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day04, <<70, 79, 82, 49, 0, 0, 25, ...>>, {:part2, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"..@@.@@@@.\n@@@.@.@.@@\n@@@@@.@.@@\n@.@@@@..@.\n@@.@@@@.@@\n.@@@@@@@.@\n.@.@.@.@@@\n@.@@@.@@@@\n.@@@@@@@@.\n@.@.@@@.@.\n"
+```
+
+```elixir
+Day04.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+13
+```
+
+```elixir
+Day04.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+43
+```
