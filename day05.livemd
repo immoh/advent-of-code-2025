@@ -1,0 +1,140 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 5
+
+## Solution
+
+```elixir
+defmodule Day05 do
+  def parse_ranges(ranges) do
+    ranges
+    |> String.split()
+    |> Enum.map(fn range ->
+      [from, to] =
+        range
+        |> String.split("-")
+        |> Enum.map(&String.to_integer/1)
+
+      from..to
+    end)
+  end
+
+  def parse_ids(ingredient_ids) do
+    ingredient_ids
+    |> String.split()
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  def parse_input(input) do
+    [fresh_ranges, ingredient_ids] = String.split(input, "\n\n", parts: 2)
+    {parse_ranges(fresh_ranges), parse_ids(ingredient_ids)}
+  end
+
+  def id_in_range?(range, id) do
+    id in range
+  end
+
+  def fresh_id?(fresh_ranges, id) do
+    Enum.any?(fresh_ranges, &id_in_range?(&1, id))
+  end
+
+  def fresh_ids({fresh_ranges, ingredient_ids}) do
+    Enum.filter(ingredient_ids, &fresh_id?(fresh_ranges, &1))
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> fresh_ids
+    |> length
+  end
+
+  # Part 2
+
+  def merge_ranges(ranges) do
+    ranges
+    |> Enum.sort_by(& &1.first)
+    |> Enum.reduce([], fn range, acc ->
+      case acc do
+        [] ->
+          [range]
+
+        [prev | rest] ->
+          if range.first <= prev.last + 1 do
+            # overlapping or touching – merge them
+            merged = prev.first..max(prev.last, range.last)
+            [merged | rest]
+          else
+            # disjoint – keep both
+            [range | acc]
+          end
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  def count_ids(ranges) do
+    ranges
+    |> Enum.map(fn range -> range.last - range.first + 1 end)
+    |> Enum.sum()
+  end
+  
+  def part2(input) do
+    {fresh_ranges, _} = parse_input(input)
+
+    fresh_ranges
+    |> merge_ranges
+    |> count_ids
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day05, <<70, 79, 82, 49, 0, 0, 25, ...>>, {:part2, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+3-5
+10-14
+16-20
+12-18
+
+1
+5
+8
+11
+17
+32
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"3-5\n10-14\n16-20\n12-18\n\n1\n5\n8\n11\n17\n32\n"
+```
+
+```elixir
+Day05.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+3
+```
+
+```elixir
+Day05.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+14
+```
