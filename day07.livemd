@@ -1,0 +1,137 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 7
+
+## Solution
+
+```elixir
+defmodule Day07 do
+  def index_of(str, char) do
+    for {c, i} <- str |> String.graphemes() |> Enum.with_index(),
+        c == char,
+        do: i
+  end
+
+  def parse_input(input) do
+    [beam_line | splitter_lines] = String.split(input)
+
+    beam_positions = index_of(beam_line, "S")
+    splitter_positions = Enum.map(splitter_lines, &index_of(&1, "^"))
+    {beam_positions, splitter_positions}
+  end
+
+  def split_beam(splitter_position, acc) do
+    {beam_positions, split_count} = acc
+
+    if MapSet.member?(beam_positions, splitter_position) do
+      {beam_positions
+       |> MapSet.delete(splitter_position)
+       |> MapSet.put(splitter_position - 1)
+       |> MapSet.put(splitter_position + 1), split_count + 1}
+    else
+      acc
+    end
+  end
+
+  def split_beams(splitter_positions, acc) do
+    Enum.reduce(splitter_positions, acc, &split_beam/2)
+  end
+
+  def run_beam({beam_positions, all_splitter_positions}) do
+    Enum.reduce(all_splitter_positions, {MapSet.new(beam_positions), 0}, &split_beams/2)
+  end
+
+  def part1(input) do
+    {_, split_count} =
+      input
+      |> parse_input
+      |> run_beam
+
+    split_count
+  end
+
+  # Part 2
+
+  def run_timelines(splitter_positions, beam_positions_freqs) do
+    beam_positions_freqs
+    |> Enum.reduce(%{}, fn {pos, freq}, acc_freqs ->
+      new_freqs =
+        if pos in splitter_positions do
+          %{(pos - 1) => freq, (pos + 1) => freq}
+        else
+          %{pos => freq}
+        end
+
+      Map.merge(acc_freqs, new_freqs, fn _k, v1, v2 -> v1 + v2 end)
+    end)
+  end
+
+  def run_beam2({[beam_position], all_splitter_positions}) do
+    all_splitter_positions
+    |> Enum.reduce(%{beam_position => 1}, &run_timelines/2)
+    |> Map.values()
+    |> Enum.sum()
+  end
+
+  def part2(input) do
+    input
+    |> parse_input
+    |> run_beam2
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day07, <<70, 79, 82, 49, 0, 0, 23, ...>>, {:part2, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+.......S.......
+...............
+.......^.......
+...............
+......^.^......
+...............
+.....^.^.^.....
+...............
+....^.^...^....
+...............
+...^.^...^.^...
+...............
+..^...^.....^..
+...............
+.^.^.^.^.^...^.
+...............
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+".......S.......\n...............\n.......^.......\n...............\n......^.^......\n...............\n.....^.^.^.....\n...............\n....^.^...^....\n...............\n...^.^...^.^...\n...............\n..^...^.....^..\n...............\n.^.^.^.^.^...^.\n...............\n"
+```
+
+```elixir
+Day07.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+21
+```
+
+```elixir
+Day07.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+40
+```
