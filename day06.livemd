@@ -1,0 +1,156 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 6
+
+## Solution
+
+```elixir
+defmodule Day06 do
+  def parse_arg_line(args) do
+    Enum.map(args, &String.to_integer/1)
+  end
+
+  def parse_operands(operands) do
+    op = %{
+      "+" => &Kernel.+/2,
+      "*" => &Kernel.*/2
+    }
+
+    Enum.map(operands, fn s -> op[s] end)
+  end
+
+  def parse_input(input) do
+    lines =
+      input
+      |> String.split("\n", trim: true)
+      |> Enum.map(&String.split/1)
+
+    {args, [operands]} = Enum.split(lines, -1)
+    [parse_operands(operands) | Enum.map(args, &parse_arg_line/1)]
+  end
+
+  defp workbook_to_problems(workbook) do
+    workbook
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+  end
+
+  def solve_problem([f | args]) do
+    Enum.reduce(args, f)
+  end
+
+  def solve_problems(problems) do
+    problems
+    |> Enum.map(&solve_problem/1)
+    |> Enum.sum()
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> workbook_to_problems
+    |> solve_problems
+  end
+
+  # Part 2
+
+  def split_arg_line(arg_line, lengths) do
+    {parts, _} =
+      Enum.reduce(lengths, {[], arg_line}, fn l, {parts, s} ->
+        next_part = String.slice(s, 0..(l - 1))
+        remaining = String.slice(s, (l + 1)..-1//1)
+        {[next_part | parts], remaining}
+      end)
+
+    Enum.reverse(parts)
+  end
+
+  def parse_integers_from_columns(rows) do
+    rows
+    |> Enum.map(&String.graphemes/1)
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+    |> Enum.map(&Enum.join/1)
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  def split_arg_lines(args, lengths) do
+    args
+    |> Enum.map(&split_arg_line(&1, lengths))
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+    |> Enum.map(&parse_integers_from_columns/1)
+  end
+
+  def arg_lengths(operands) do
+    lengths =
+      Regex.scan(~r/[*+]\s+/, operands)
+      |> List.flatten()
+      |> Enum.map(&String.length/1)
+
+    {butlast, last} = Enum.split(lengths, -1)
+    Enum.map(butlast, fn n -> n - 1 end) ++ last
+  end
+
+  def parse_input2(input) do
+    lines = String.split(input, "\n", trim: true)
+
+    {arg_lines, [operands]} = Enum.split(lines, -1)
+    args = split_arg_lines(arg_lines, arg_lengths(operands))
+    operands = operands |> String.split() |> parse_operands
+
+    Enum.zip(operands, args)
+    |> Enum.map(fn {f, args} -> [f | args] end)
+  end
+
+  def part2(input) do
+    input
+    |> parse_input2
+    |> solve_problems
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day06, <<70, 79, 82, 49, 0, 0, 30, ...>>, {:part2, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   +  
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"123 328  51 64 \n 45 64  387 23 \n  6 98  215 314\n*   +   *   +  \n"
+```
+
+```elixir
+Day06.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+4277556
+```
+
+```elixir
+Day06.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+3263827
+```
