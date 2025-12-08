@@ -1,0 +1,179 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 8
+
+## Solution
+
+```elixir
+defmodule Day08 do
+  def parse_input(input) do
+    input
+    |> String.split()
+    |> Enum.map(fn line ->
+      line
+      |> String.split(",", parts: 3)
+      |> Enum.map(&String.to_integer/1)
+    end)
+  end
+
+  def pairs(list) do
+    for {x, i} <- Enum.with_index(list),
+        {y, j} <- Enum.with_index(list),
+        j > i,
+        do: {x, y}
+  end
+
+  def square_distance({[x1, y1, z1], [x2, y2, z2]}) do
+    (x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2
+  end
+
+  def sorted_pairs(list) do
+    list
+    |> pairs
+    |> Enum.sort_by(&square_distance/1)
+  end
+
+  def add_pair_to_circuits({p1, p2}, circuits) do
+    circuit1 = Enum.find(circuits, &MapSet.member?(&1, p1))
+    circuit2 = Enum.find(circuits, &MapSet.member?(&1, p2))
+
+    cond do
+      is_nil(circuit1) and is_nil(circuit2) ->
+        MapSet.put(circuits, MapSet.new([p1, p2]))
+
+      is_nil(circuit1) ->
+        circuits
+        |> MapSet.delete(circuit2)
+        |> MapSet.put(MapSet.put(circuit2, p1))
+
+      is_nil(circuit2) ->
+        circuits
+        |> MapSet.delete(circuit1)
+        |> MapSet.put(MapSet.put(circuit1, p2))
+
+      circuit1 == circuit2 ->
+        circuits
+
+      circuit1 != circuit2 ->
+        circuits
+        |> MapSet.delete(circuit1)
+        |> MapSet.delete(circuit2)
+        |> MapSet.put(MapSet.union(circuit1, circuit2))
+    end
+  end
+
+  def find_circuits(pairs) do
+    Enum.reduce(pairs, MapSet.new(), fn pair, circuits ->
+      add_pair_to_circuits(pair, circuits)
+    end)
+  end
+
+  def largest_circuit_sizes(circuits, n_largest) do
+    circuits
+    |> Enum.map(&Enum.count/1)
+    |> Enum.sort(&>=/2)
+    |> Enum.take(n_largest)
+  end
+
+  def part1(input, n_shortest_connections, n_largest_circuits) do
+    input
+    |> parse_input
+    |> sorted_pairs
+    |> Enum.take(n_shortest_connections)
+    |> find_circuits
+    |> largest_circuit_sizes(n_largest_circuits)
+    |> Enum.reduce(&Kernel.*/2)
+  end
+
+  # Part 2
+
+  def mega_circuit?(circuits, n) do
+    case MapSet.to_list(circuits) do
+      [single] -> MapSet.size(single) == n
+      _ -> false
+    end
+  end
+
+  def find_last_box_for_mega_circuit(pairs, n) do
+    Enum.reduce_while(pairs, MapSet.new(), fn pair, circuits ->
+      new_circuits = add_pair_to_circuits(pair, circuits)
+
+      if mega_circuit?(new_circuits, n) do
+        {:halt, pair}
+      else
+        {:cont, new_circuits}
+      end
+    end)
+  end
+
+  def distance_from_wall({[x1, _, _], [x2, _, _]}), do: x1 * x2
+
+  def part2(input) do
+    boxes = parse_input(input)
+
+    boxes
+    |> sorted_pairs
+    |> find_last_box_for_mega_circuit(length(boxes))
+    |> distance_from_wall
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day08, <<70, 79, 82, 49, 0, 0, 33, ...>>, {:part2, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+162,817,812
+57,618,57
+906,360,560
+592,479,940
+352,342,300
+466,668,158
+542,29,236
+431,825,988
+739,650,466
+52,470,668
+216,146,977
+819,987,18
+117,168,530
+805,96,715
+346,949,466
+970,615,88
+941,993,340
+862,61,35
+984,92,344
+425,690,689
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"162,817,812\n57,618,57\n906,360,560\n592,479,940\n352,342,300\n466,668,158\n542,29,236\n431,825,988\n739,650,466\n52,470,668\n216,146,977\n819,987,18\n117,168,530\n805,96,715\n346,949,466\n970,615,88\n941,993,340\n862,61,35\n984,92,344\n425,690,689\n"
+```
+
+```elixir
+Day08.part1(sample_input, 10, 3)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+40
+```
+
+```elixir
+Day08.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+25272
+```
