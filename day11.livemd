@@ -1,0 +1,137 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 11
+
+## Solution
+
+```elixir
+defmodule Day11 do
+  def parse_input(input) do
+    input
+    |> String.split("\n", trim: true)
+    |> Map.new(fn line ->
+      [from, remaining] = String.split(line, ":", parts: 2)
+      {from, String.split(remaining)}
+    end)
+  end
+
+  def do_unique_paths_count(connections, [head | _] = counts) do
+    new_counts =
+      Enum.reduce(head, %{}, fn {node, n}, counts ->
+        Map.get(connections, node, [])
+        |> Enum.reduce(counts, fn target, counts ->
+          Map.update(counts, target, n, &(&1 + n))
+        end)
+      end)
+
+    if new_counts == %{} do
+      counts
+    else
+      do_unique_paths_count(connections, [new_counts | counts])
+    end
+  end
+
+  def unique_paths_count(connections, from, to) do
+    connections
+    |> do_unique_paths_count([%{from => 1}])
+    |> Enum.reduce(fn m1, m2 ->
+      Map.merge(m1, m2, fn _, v1, v2 -> v1 + v2 end)
+    end)
+    |> Map.get(to, 0)
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> unique_paths_count("you", "out")
+  end
+
+  def part2(input) do
+    connections = parse_input(input)
+
+    svr_dac = unique_paths_count(connections, "svr", "dac")
+    dac_fft = unique_paths_count(connections, "dac", "fft")
+    fft_out = unique_paths_count(connections, "fft", "out")
+
+    svr_fft = unique_paths_count(connections, "svr", "fft")
+    fft_dac = unique_paths_count(connections, "fft", "dac")
+    dac_out = unique_paths_count(connections, "dac", "out")
+
+    svr_dac * dac_fft * fft_out +
+      svr_fft * fft_dac * dac_out
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day11, <<70, 79, 82, 49, 0, 0, 19, ...>>, {:part2, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+aaa: you hhh
+you: bbb ccc
+bbb: ddd eee
+ccc: ddd eee fff
+ddd: ggg
+eee: out
+fff: out
+ggg: out
+hhh: ccc fff iii
+iii: out
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"aaa: you hhh\nyou: bbb ccc\nbbb: ddd eee\nccc: ddd eee fff\nddd: ggg\neee: out\nfff: out\nggg: out\nhhh: ccc fff iii\niii: out\n"
+```
+
+```elixir
+Day11.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+5
+```
+
+```elixir
+sample_input2 = """
+svr: aaa bbb
+aaa: fft
+fft: ccc
+bbb: tty
+tty: ccc
+ccc: ddd eee
+ddd: hub
+hub: fff
+eee: dac
+dac: fff
+fff: ggg hhh
+ggg: out
+hhh: out
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"svr: aaa bbb\naaa: fft\nfft: ccc\nbbb: tty\ntty: ccc\nccc: ddd eee\nddd: hub\nhub: fff\neee: dac\ndac: fff\nfff: ggg hhh\nggg: out\nhhh: out\n"
+```
+
+```elixir
+Day11.part2(sample_input2)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+2
+```
