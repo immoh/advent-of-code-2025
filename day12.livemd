@@ -1,0 +1,192 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 12
+
+## Solution
+
+```elixir
+defmodule Day12 do
+  def parse_index_line(index_line) do
+    [index_str | _] = String.split(index_line, ":")
+    String.to_integer(index_str)
+  end
+
+  def parse_shape_lines(shape_lines) do
+    for {line, i} <- Enum.with_index(shape_lines),
+        {c, j} <- line |> String.graphemes() |> Enum.with_index(),
+        into: %{},
+        do: {{i, j}, c}
+  end
+
+  def parse_shape(shape) do
+    [index_line | shape_lines] = String.split(shape, "\n")
+
+    {parse_index_line(index_line), parse_shape_lines(shape_lines)}
+  end
+
+  def parse_size(size_str) do
+    size_str
+    |> String.replace(":", "")
+    |> String.split("x")
+    |> Enum.map(&String.to_integer/1)
+    |> List.to_tuple()
+  end
+
+  def parse_shape_counts(count_strs) do
+    Enum.map(count_strs, &String.to_integer/1)
+  end
+
+  def parse_regions(regions) do
+    regions
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn region ->
+      [size_str | count_strs] = String.split(region, " ", trim: true)
+
+      {parse_size(size_str), parse_shape_counts(count_strs)}
+    end)
+  end
+
+  def parse_input(input) do
+    {shapes, [regions]} =
+      input
+      |> String.split("\n\n")
+      |> Enum.split(-1)
+
+    {Map.new(shapes, &parse_shape/1), parse_regions(regions)}
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day12, <<70, 79, 82, 49, 0, 0, 19, ...>>, {:part1, 1}}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+0:
+###
+##.
+##.
+
+1:
+###
+##.
+.##
+
+2:
+.##
+###
+##.
+
+3:
+##.
+###
+##.
+
+4:
+###
+#..
+###
+
+5:
+###
+.#.
+###
+
+4x4: 0 0 0 0 2 0
+12x5: 1 0 1 0 2 2
+12x5: 1 0 1 0 3 2
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"0:\n###\n##.\n##.\n\n1:\n###\n##.\n.##\n\n2:\n.##\n###\n##.\n\n3:\n##.\n###\n##.\n\n4:\n###\n#..\n###\n\n5:\n###\n.#.\n###\n\n4x4: 0 0 0 0 2 0\n12x5: 1 0 1 0 2 2\n12x5: 1 0 1 0 3 2\n"
+```
+
+```elixir
+Day12.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{%{
+   0 => %{
+     {0, 0} => "#",
+     {0, 1} => "#",
+     {0, 2} => "#",
+     {1, 0} => "#",
+     {1, 1} => "#",
+     {1, 2} => ".",
+     {2, 0} => "#",
+     {2, 1} => "#",
+     {2, 2} => "."
+   },
+   1 => %{
+     {0, 0} => "#",
+     {0, 1} => "#",
+     {0, 2} => "#",
+     {1, 0} => "#",
+     {1, 1} => "#",
+     {1, 2} => ".",
+     {2, 0} => ".",
+     {2, 1} => "#",
+     {2, 2} => "#"
+   },
+   2 => %{
+     {0, 0} => ".",
+     {0, 1} => "#",
+     {0, 2} => "#",
+     {1, 0} => "#",
+     {1, 1} => "#",
+     {1, 2} => "#",
+     {2, 0} => "#",
+     {2, 1} => "#",
+     {2, 2} => "."
+   },
+   3 => %{
+     {0, 0} => "#",
+     {0, 1} => "#",
+     {0, 2} => ".",
+     {1, 0} => "#",
+     {1, 1} => "#",
+     {1, 2} => "#",
+     {2, 0} => "#",
+     {2, 1} => "#",
+     {2, 2} => "."
+   },
+   4 => %{
+     {0, 0} => "#",
+     {0, 1} => "#",
+     {0, 2} => "#",
+     {1, 0} => "#",
+     {1, 1} => ".",
+     {1, 2} => ".",
+     {2, 0} => "#",
+     {2, 1} => "#",
+     {2, 2} => "#"
+   },
+   5 => %{
+     {0, 0} => "#",
+     {0, 1} => "#",
+     {0, 2} => "#",
+     {1, 0} => ".",
+     {1, 1} => "#",
+     {1, 2} => ".",
+     {2, 0} => "#",
+     {2, 1} => "#",
+     {2, 2} => "#"
+   }
+ }, [{{4, 4}, [0, 0, 0, 0, 2, 0]}, {{12, 5}, [1, 0, 1, 0, 2, 2]}, {{12, 5}, [1, 0, 1, 0, 3, 2]}]}
+```
