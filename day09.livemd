@@ -1,0 +1,164 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 9
+
+## Solution
+
+```elixir
+defmodule Day09 do
+  def parse_input(input) do
+    input
+    |> String.split()
+    |> Enum.map(fn line ->
+      line
+      |> String.split(",", parts: 2)
+      |> Enum.map(&String.to_integer/1)
+      |> List.to_tuple()
+    end)
+  end
+
+  def square_distance({x1, y1}, {x2, y2}), do: (x2 - x1) ** 2 + (y2 - y1) ** 2
+
+  def rectangle_area({{x1, y1}, {x2, y2}}), do: (abs(x2 - x1) + 1) * (abs(y2 - y1) + 1)
+
+  def candidate_rectangles(points) do
+    xs = Enum.map(points, fn {x, _} -> x end)
+    ys = Enum.map(points, fn {_, y} -> y end)
+    min_x = Enum.min(xs)
+    max_x = Enum.max(xs)
+    min_y = Enum.min(ys)
+    max_y = Enum.max(ys)
+
+    lt = Enum.min_by(points, &square_distance(&1, {min_x, min_y}))
+    rt = Enum.min_by(points, &square_distance(&1, {max_x, min_y}))
+    lb = Enum.min_by(points, &square_distance(&1, {min_x, max_y}))
+    rb = Enum.min_by(points, &square_distance(&1, {max_x, max_y}))
+
+    [{lt, rb}, {rt, lb}]
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> candidate_rectangles
+    |> Enum.map(&rectangle_area/1)
+    |> Enum.max()
+  end
+
+  # Part2
+
+  def normalize_edge([p1, p2]) do
+    [a, b] = Enum.sort([p1, p2])
+    {a, b}
+  end
+
+  def edges([head | _] = points) do
+    (points ++ [head])
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.map(&normalize_edge/1)
+  end
+
+  def candidate_rectangles2(points) do
+    for {p1, i} <- Enum.with_index(points),
+        {p2, j} <- Enum.with_index(points),
+        i < j,
+        do: {p1, p2}
+  end
+
+  def compressed_coordinates(points) do
+    for x <- points |> Enum.map(fn {x, _} -> x end) |> Enum.sort() |> Enum.dedup(),
+        y <- points |> Enum.map(fn {_, y} -> y end) |> Enum.sort() |> Enum.dedup(),
+        do: {x, y}
+  end
+
+  def point_is_inside_polygon?({x, y}, edges) do
+    edges
+    |> Enum.count(fn {{x1, y1}, {x2, y2}} ->
+      x1 == x2 and x1 <= x and y1 <= y and y < y2
+    end)
+    |> rem(2) ==
+      1
+  end
+
+  def tile_inside_map(compressed_coordinates, edges) do
+    Map.new(compressed_coordinates, fn point ->
+      {point, point_is_inside_polygon?(point, edges)}
+    end)
+  end
+
+  def rectangle_is_inside_polygon?({{x1, y1}, {x2, y2}}, tile_inside_map) do
+    x_min = min(x1, x2)
+    x_max = max(x1, x2)
+    y_min = min(y1, y2)
+    y_max = max(y1, y2)
+
+    tile_inside_map
+    |> Map.filter(fn {{x, y}, _} ->
+      x_min <= x and x < x_max and y_min <= y and y < y_max
+    end)
+    |> Map.values()
+    |> Enum.all?()
+  end
+
+  def part2(input) do
+    points = parse_input(input)
+    edges = edges(points)
+    compressed_coordinates = compressed_coordinates(points)
+
+    tile_inside_map = tile_inside_map(compressed_coordinates, edges)
+
+    # start checking all possible rectangles from largest one – slow
+    candidate_rectangles2(points)
+    |> Enum.sort_by(&rectangle_area/1, :desc)
+    |> Enum.find(&rectangle_is_inside_polygon?(&1, tile_inside_map))
+    |> rectangle_area()
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day09, <<70, 79, 82, 49, 0, 0, 42, ...>>, ...}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+7,1
+11,1
+11,7
+9,7
+9,5
+2,5
+2,3
+7,3
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"7,1\n11,1\n11,7\n9,7\n9,5\n2,5\n2,3\n7,3\n"
+```
+
+```elixir
+Day09.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+50
+```
+
+```elixir
+Day09.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+24
+```
