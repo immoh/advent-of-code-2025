@@ -1,0 +1,192 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Advent of Code 2025 – Day 10
+
+## Solution
+
+```elixir
+# Solution based on https://old.reddit.com/r/adventofcode/comments/1pk87hl/2025_day_10_part_2_bifurcate_your_way_to_victory/
+
+defmodule Day10 do
+  def parse_light_diagram(light_diagram) do
+    light_diagram
+    |> String.replace(~r/(\[|\])/, "")
+    |> String.graphemes()
+    |> Enum.map(&(&1 == "#"))
+  end
+
+  def parse_buttons(button) do
+    button
+    |> String.replace(~r/(\(|\))/, "")
+    |> String.split(",")
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  def parse_joltages(joltages) do
+    joltages
+    |> String.replace(~r/(\{|\})/, "")
+    |> String.split(",")
+    |> Enum.map(&String.to_integer/1)
+  end
+
+  def parse_input(input) do
+    input
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn line ->
+      [light_diagram | rest] = String.split(line)
+      buttons = Enum.take_while(rest, &String.starts_with?(&1, "("))
+      [joltages | _] = Enum.drop_while(rest, &String.starts_with?(&1, "("))
+
+      {parse_light_diagram(light_diagram), Enum.map(buttons, &parse_buttons/1),
+       parse_joltages(joltages)}
+    end)
+  end
+
+  def apply_button_set_to_lights(button_set, state) do
+    Enum.reduce(button_set, state, &apply_buttons_to_lights/2)
+  end
+
+  def apply_buttons_to_lights(buttons, state) do
+    Enum.reduce(buttons, state, fn button, state ->
+      List.update_at(state, button, &(!&1))
+    end)
+  end
+
+  def button_presses_result_in_indicator_lights_state?(initial_state, end_state, buttons) do
+    end_state == apply_button_set_to_lights(buttons, initial_state)
+  end
+
+  def all_subsets([]), do: [[]]
+
+  def all_subsets([h | t]) do
+    subsets = all_subsets(t)
+    subsets ++ Enum.map(subsets, fn s -> [h | s] end)
+  end
+
+  def min_button_presses_to_indicator_lights({end_state, buttons, _}) do
+    initial_state = List.duplicate(false, length(end_state))
+
+    buttons
+    |> all_subsets()
+    |> Enum.sort_by(&length/1)
+    |> Enum.find(&button_presses_result_in_indicator_lights_state?(initial_state, end_state, &1))
+    |> length
+  end
+
+  def part1(input) do
+    input
+    |> parse_input
+    |> Enum.map(&min_button_presses_to_indicator_lights/1)
+    |> Enum.sum()
+  end
+
+  # Part2 
+
+  def apply_button_presses_to_joltages(joltages, presses) do
+    Enum.reduce(presses, joltages, fn press, joltages ->
+      Enum.reduce(press, joltages, fn i, joltages ->
+        List.update_at(joltages, i, fn x -> x - 1 end)
+      end)
+    end)
+  end
+
+  def min_button_presses_to_joltages_recursive(buttons, joltages, memo) do
+    case Map.fetch(memo, joltages) do
+      {:ok, res} ->
+        {res, memo}
+
+      _ ->
+        {res, memo} =
+          if Enum.all?(joltages, fn x -> x == 0 end) do
+            {0, memo}
+          else
+            initial_state = List.duplicate(false, length(joltages))
+            end_state = Enum.map(joltages, fn x -> rem(x, 2) != 0 end)
+
+            possible_presses =
+              buttons
+              |> all_subsets()
+              |> Enum.filter(
+                &button_presses_result_in_indicator_lights_state?(initial_state, end_state, &1)
+              )
+
+            {counts, memo} =
+              Enum.reduce(possible_presses, {[], memo}, fn presses, {counts, memo} ->
+                new_joltages = apply_button_presses_to_joltages(joltages, presses)
+
+                if Enum.all?(new_joltages, fn x -> x == 0 or x > 1 end) do
+                  {res, memo} =
+                    min_button_presses_to_joltages_recursive(
+                      buttons,
+                      Enum.map(new_joltages, fn x -> div(x, 2) end),
+                      memo
+                    )
+
+                  {[length(presses) + 2 * res | counts], memo}
+                else
+                  {counts, memo}
+                end
+              end)
+
+            {Enum.min(counts, fn -> 1_000_000 end), memo}
+          end
+
+        {res, Map.put(memo, joltages, res)}
+    end
+  end
+
+  def min_button_presses_to_joltages({_, buttons, joltages}) do
+    {res, _} = min_button_presses_to_joltages_recursive(buttons, joltages, %{})
+    res
+  end
+
+  def part2(input) do
+    input
+    |> parse_input
+    |> Enum.map(&min_button_presses_to_joltages/1)
+    |> Enum.sum()
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Day10, <<70, 79, 82, 49, 0, 0, 65, ...>>, ...}
+```
+
+## Sample input
+
+```elixir
+sample_input = """
+[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}
+[...#.] (0,2,3,4) (2,3) (0,4) (0,1,2) (1,2,3,4) {7,5,12,7,2}
+[.###.#] (0,1,2,3,4) (0,3,4) (0,1,2,4,5) (1,2) {10,11,11,5,10,5}
+"""
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}\n[...#.] (0,2,3,4) (2,3) (0,4) (0,1,2) (1,2,3,4) {7,5,12,7,2}\n[.###.#] (0,1,2,3,4) (0,3,4) (0,1,2,4,5) (1,2) {10,11,11,5,10,5}\n"
+```
+
+```elixir
+Day10.part1(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+7
+```
+
+```elixir
+Day10.part2(sample_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+33
+```
