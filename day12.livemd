@@ -1,0 +1,63 @@
+# Advent of Code 2025 – Day 12
+
+## Solution
+
+This solution doesn't work for the example input but it works for the large input file.
+
+```elixir
+defmodule Day12 do
+  def solve(input) do
+    {shapes, regions} = parse_input(input)
+
+    Enum.count(regions, &can_fit_presents?(shapes, &1))
+  end
+
+  def parse_input(input) do
+    {shapes, [regions]} =
+      input
+      |> String.split("\n\n", trim: true)
+      |> Enum.split(-1)
+
+    {parse_shapes(shapes), parse_regions(regions)}
+  end
+
+  def parse_shapes(shapes) do
+    Enum.map(shapes, fn shape_and_index_lines ->
+      [_ | shape_lines] = String.split(shape_and_index_lines, "\n", trim: true)
+
+      shape_lines
+      |> Enum.sum_by(&String.length(String.replace(&1, ".", "")))
+    end)
+  end
+
+  def parse_regions(regions) do
+    regions
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn region_line ->
+      [dimensions_str, shape_counts_str] = String.split(region_line, ": ", parts: 2, trim: true)
+
+      [width, height] =
+        dimensions_str
+        |> String.split("x", parts: 2, trim: true)
+        |> Enum.map(&String.to_integer/1)
+
+      shape_counts =
+        shape_counts_str
+        |> String.split(" ", trim: true)
+        |> Enum.map(&String.to_integer/1)
+
+      {{width, height}, shape_counts}
+    end)
+  end
+
+  def can_fit_presents?(shapes, {{width, height}, shape_counts}) do
+    shapes_area =
+      Enum.zip_with(shapes, shape_counts, &(&1 * &2))
+      |> Enum.sum()
+
+    region_area = width * height
+
+    shapes_area <= region_area
+  end
+end
+```
